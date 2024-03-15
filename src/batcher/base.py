@@ -39,7 +39,9 @@ class EEGDataset(Dataset):
             self.filenames = [root_path + fn for fn in filenames if os.path.isfile(root_path+fn)]
             self.root_path = root_path
             
-        print("Number of subjects loaded: ", len(self.filenames))
+       # print("Number of subjects loaded: ", len(self.filenames))
+        #print("Filenames loaded:", self.filenames)
+        
         # self.data = data_all
         self.chunk_len = chunk_len
         self.num_chunks = num_chunks
@@ -52,9 +54,11 @@ class EEGDataset(Dataset):
         self.start_samp_pnt = start_samp_pnt
 
     def __len__(self):
+        #print(f"Dataset Length: {len(self.filenames)}")
         return len(self.filenames)
 
     def __getitem__(self, idx):
+        #print(f"Getting item: {idx}")
         data = self.load_tensor(self.filenames[idx])
         #===reorder channels====
         data = self.reorder_channels(data)
@@ -86,21 +90,26 @@ class EEGDataset(Dataset):
 
     def load_tensor(self, filename):
         # tensor_fn = filename[:-3] + 'pt'
+        #print(f"Attempting to load file: {filename}")
         tensor_data = torch.load(filename)
+       # print(f"Loaded file successfully: {filename}")
         return tensor_data.numpy()
 
     def reorder_channels(self, data):
-        chann_labels = {'FP1': 0, 'FP2': 1, 'F3': 2, 'F4': 3, 'C3': 4, 'C4': 5, 'P3': 6, 'P4': 7, 'O1': 8, 'O2': 9, 'F7': 10, 'F8': 11, 'T3': 12, 'T4': 13, 'T5': 14, 'T6': 15, 'FZ': 16, 'CZ': 17, 'PZ': 18, 'OZ': 19, 'T1': 20, 'T2': 21}
-        reorder_labels = {'FP1': 0, 'FP2': 1, 'F7': 2, 'F3': 3, 'FZ': 4, 'F4': 5, 'F8': 6, 'T1': 7, 'T3': 8, 'C3': 9, 'CZ': 10, 'C4': 11, 'T4': 12, 'T2': 13, 'T5': 14, 'P3': 15, 'PZ': 16, 'P4': 17, 'T6': 18, 'O1': 19, 'OZ': 20, 'O2': 21}
+    # Updated channel labels with 'T1' and 'T2' removed
+        chann_labels = {'FP1': 0, 'FP2': 1, 'F3': 2, 'F4': 3, 'C3': 4, 'C4': 5, 'P3': 6, 'P4': 7, 'O1': 8, 'O2': 9, 'F7': 10, 'F8': 11, 'T3': 12, 'T4': 13, 'T5': 14, 'T6': 15, 'FZ': 16, 'CZ': 17, 'PZ': 18, 'OZ': 19}
+        reorder_labels = {'FP1': 0, 'FP2': 1, 'F7': 2, 'F3': 3, 'FZ': 4, 'F4': 5, 'F8': 6, 'T3': 7, 'C3': 8, 'CZ': 9, 'C4': 10, 'T4': 11, 'T5': 12, 'P3': 13, 'PZ': 14, 'P4': 15, 'T6': 16, 'O1': 17, 'OZ': 18, 'O2': 19}
 
-        reordered = np.zeros_like(data)
+        # Adjust the array size to 20 channels
+        reordered = np.zeros((20, data.shape[1]))
         for label, target_idx in reorder_labels.items():
             mapped_idx = chann_labels[label]
             reordered[target_idx, :] = data[mapped_idx, :]
         
         return reordered
 
-    def split_chunks(self, data, length=500, ovlp=50, num_chunks=10, start_point=-1): 
+
+    def split_chunks(self, data, length=512, ovlp=51, num_chunks=34, start_point=-1): 
         '''2 seconds, 0.2 seconds overlap'''
         all_chunks = []
         total_len = data.shape[1]

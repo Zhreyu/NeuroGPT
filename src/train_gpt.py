@@ -163,6 +163,7 @@ def train(config: Dict=None) -> Trainer:
             'inputs',
             'attention_mask'
         ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=root_path, gpt_only= not config["use_encoder"], normalization=config["do_normalization"])
+        print(f"Number of training files loaded: {len(files)}")
 
         validation_dataset = EEGDataset(files[:1000], sample_keys=[
             'inputs',
@@ -259,13 +260,13 @@ def make_model(model_config: Dict=None):
     if model_config["use_encoder"] == True:
         chann_coords = None
         
-        encoder = EEGConformer(n_outputs=model_config["num_decoding_classes"], n_chans=22, n_times=model_config['chunk_len'], ch_pos=chann_coords, is_decoding_mode=model_config["ft_only_encoder"])
+        encoder = EEGConformer(n_outputs=model_config["num_decoding_classes"], n_chans=20, n_times=model_config['chunk_len'], ch_pos=chann_coords, is_decoding_mode=model_config["ft_only_encoder"])
         #calculates the output dimension of the encoder, which is the output of transformer layer.
         model_config["parcellation_dim"] = ((model_config['chunk_len'] - model_config['filter_time_length'] + 1 - model_config['pool_time_length']) // model_config['stride_avg_pool'] + 1) * model_config['n_filters_time']
 
     else:
         encoder = None
-        model_config["parcellation_dim"] = model_config["chunk_len"] * 22
+        model_config["parcellation_dim"] = model_config["chunk_len"] * 20
 
     embedder = make_embedder(
         training_style=model_config["training_style"],
