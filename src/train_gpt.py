@@ -28,11 +28,13 @@ src/trainer: Trainer for model; invokes instance of
 src/model: Build full model from components (ie., embedder, 
     decoder, unembedder). See make_model() below for details.
 """
+import gc
+
 from batcher.downstream_dataset import MotorImageryDataset
 import torch
 import os
 import argparse
-import pdb
+
 from typing import Dict
 import json
 from datetime import datetime
@@ -42,6 +44,7 @@ import numpy as np
 from encoder.conformer_braindecode import EEGConformer
 from torch import manual_seed
 import sys
+import wandb
 
 from utils import cv_split_bci, read_threshold_sub
 script_path = os.path.dirname(os.path.realpath(__file__))
@@ -55,6 +58,11 @@ from trainer.base import Trainer
 from decoder.unembedder import make_unembedder
 
 os.environ["WANDB_DISABLED"] = "true"
+#wandb.init(project="neuroGPT")
+
+current_time = datetime.now()
+print("\nCurrent Time and Date:\n", current_time)
+print("\nStarting at ", current_time.strftime("%H:%M:%S"))
 
 def train(config: Dict=None) -> Trainer:
     """Model training according to config.
@@ -157,14 +165,25 @@ def train(config: Dict=None) -> Trainer:
     else:
         root_path = config["train_data_path"]
         files = read_threshold_sub('../inputs/sub_list2.csv', lower_bound=1000, upper_bound=1000000)# time len
+        train_len = int(len(files) * 0.75)
+        
+        print("\ntotal number of files: ", len(files))
+        print("\ntrain_length is: ", train_len)
+        print("\nfirst file name: ", files[0])
      
         random.shuffle(files)
-        train_dataset = EEGDataset(files[1000:], sample_keys=[
+        print("\nfirst file name after shuffling: ", files[0])
+        
+        train_dataset = EEGDataset(files[:train_len], sample_keys=[
             'inputs',
             'attention_mask'
         ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=root_path, gpt_only= not config["use_encoder"], normalization=config["do_normalization"])
+<<<<<<< Updated upstream
+=======
+        print(f"\nNumber of training files to be loaded: {len(files)}\n")
+>>>>>>> Stashed changes
 
-        validation_dataset = EEGDataset(files[:1000], sample_keys=[
+        validation_dataset = EEGDataset(files[train_len:], sample_keys=[
             'inputs',
             'attention_mask'
         ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=root_path, gpt_only= not config["use_encoder"], normalization=config["do_normalization"])
@@ -214,6 +233,8 @@ def train(config: Dict=None) -> Trainer:
     )
 
     if config['do_train']:
+        print("config[resume_from]", config["resume_from"])
+        print("config[log_dir]", config["log_dir"])
         trainer.train(resume_from_checkpoint=config["resume_from"])
         trainer.save_model(
             os.path.join(
@@ -259,9 +280,16 @@ def make_model(model_config: Dict=None):
     if model_config["use_encoder"] == True:
         chann_coords = None
         
+<<<<<<< Updated upstream
         encoder = EEGConformer(n_outputs=model_config["num_decoding_classes"], n_chans=22, n_times=model_config['chunk_len'], ch_pos=chann_coords, is_decoding_mode=model_config["ft_only_encoder"])
+=======
+        encoder = EEGConformer(n_outputs=model_config["num_decoding_classes"], n_chans=20, n_times=model_config['chunk_len'], ch_pos=chann_coords, is_decoding_mode=model_config["ft_only_encoder"])
+       
+>>>>>>> Stashed changes
         #calculates the output dimension of the encoder, which is the output of transformer layer.
+        #model_config["parcellation_dim"] = 1080
         model_config["parcellation_dim"] = ((model_config['chunk_len'] - model_config['filter_time_length'] + 1 - model_config['pool_time_length']) // model_config['stride_avg_pool'] + 1) * model_config['n_filters_time']
+        #print('parcellation_dim',model_config["parcellation_dim"]) 
 
     else:
         encoder = None
@@ -286,6 +314,8 @@ def make_model(model_config: Dict=None):
         hidden_activation=model_config["hidden_activation"],
         dropout=model_config["dropout"]
     )
+    #decoder.config.gradient_checkpointing = True
+
 
     if model_config["embedding_dim"] != model_config["parcellation_dim"]:
         unembedder = make_unembedder(
@@ -305,7 +335,7 @@ def make_model(model_config: Dict=None):
         embedder=embedder,
         decoder=decoder,
         unembedder=unembedder
-    )
+    )    
 
     if model_config["ft_only_encoder"]:
         model.switch_ft_mode(ft_encoder_only=True)
@@ -918,19 +948,19 @@ def get_args() -> argparse.ArgumentParser:
     ## EEG settings
     parser.add_argument(
         '--chunk_len',
-        default=500,
+        default=512,
         type=int)
     parser.add_argument(
     '--num_chunks',
-    default=8,
+    default=34,
     type=int)
     parser.add_argument(
     '--chunk_ovlp',
-    default=50,
+    default=51,
     type=int)
     parser.add_argument(
     '--sampling_rate',
-    default=250,
+    default=256,
     type=int)
     parser.add_argument(
     '--fold_i',
@@ -960,7 +990,7 @@ def get_args() -> argparse.ArgumentParser:
     parser.add_argument('--n-filters-time', metavar='INT', default=40, type=int, help='number of temporal filters (default: 40)')
     parser.add_argument('--num-encoder-layers', metavar='INT', default=6, type=int, help='number of transformer layers in encoder')
 
-    parser.add_argument('--eval_every_n_steps', default=200, type=int)
+    parser.add_argument('--eval_every_n_steps', default=2000, type=int)
     parser.add_argument('--freeze-encoder', metavar='BOOL', default='False',
         choices=('True', 'False'),
         type=str,
@@ -980,3 +1010,7 @@ def get_args() -> argparse.ArgumentParser:
 if __name__ == '__main__':
 
     trainer = train()
+    current_time = datetime.now()
+    
+    print("\nScript ends at: ", current_time.strftime("%H:%M:%S"))
+
