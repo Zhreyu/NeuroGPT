@@ -236,6 +236,7 @@ def make_trainer(
     trainer: transformers.Trainer
     """
     trainer_args = TrainingArguments(
+<<<<<<< Updated upstream
         output_dir=output_dir,
         run_name=run_name,
         do_train=do_train,
@@ -272,6 +273,43 @@ def make_trainer(
         deepspeed=deepspeed,
         **kwargs
     )
+=======
+            output_dir=output_dir,
+            run_name=run_name,
+            do_train=do_train,
+            do_eval=do_eval,
+          #  n_gpu = 1,
+            overwrite_output_dir=overwrite_output_dir,
+            prediction_loss_only=prediction_loss_only,
+            per_device_train_batch_size=per_device_train_batch_size,
+            per_device_eval_batch_size=per_device_eval_batch_size,
+            dataloader_num_workers=dataloader_num_workers,
+            optim=optim,
+            learning_rate=learning_rate,
+            warmup_ratio=warmup_ratio,
+            max_steps=max_steps,
+            num_train_epochs=num_train_epochs,
+            weight_decay=weight_decay,
+            adam_beta1=adam_beta1,
+            adam_beta2=adam_beta2,
+            adam_epsilon=adam_epsilon,
+            lr_scheduler_type=lr_scheduler_type,
+            save_strategy=save_strategy,
+            save_total_limit=save_total_limit,
+            greater_is_better=greater_is_better,
+            save_steps=save_steps,
+            logging_strategy=logging_strategy,
+            logging_first_step=logging_first_step,
+            logging_steps=logging_steps,
+            evaluation_strategy=evaluation_strategy,
+            eval_steps=eval_steps if eval_steps is not None else logging_steps,
+            seed=seed,
+            fp16=fp16,
+            max_grad_norm=max_grad_norm,
+            deepspeed=deepspeed,
+            **kwargs
+        )
+>>>>>>> Stashed changes
 
     data_collator = _cat_data_collator
     is_deepspeed = deepspeed is not None

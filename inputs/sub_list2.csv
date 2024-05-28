@@ -19845,6 +19845,7 @@ aaaaaqtl_s001_t000_03_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_04_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_05_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_06_raw_eeg.pt,15360
+<<<<<<< Updated upstream
 aaaaaqtl_s001_t000_07_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_0_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_10_raw_eeg.pt,15360
@@ -27413,4 +27414,7 @@ aaaaaqtl_s001_t000_16_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_17_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_19_raw_eeg.pt,15360
 aaaaaqtl_s001_t000_20_raw_eeg.pt,15360
+>>>>>>> Stashed changes
+=======
+aaaaaqtl_s001_t000_07_raw_eeg.pt,15360
 >>>>>>> Stashed changes

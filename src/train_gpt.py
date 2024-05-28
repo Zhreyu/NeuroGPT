@@ -51,11 +51,25 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(script_path, '../'))
 # from batcher.make import make_batcher
 from batcher.base import EEGDataset
+from batcher.downstream_dataset import EEGDatasetCls
+
 from decoder.make_decoder import make_decoder
 from embedder.make import make_embedder
 from trainer.make import make_trainer
 from trainer.base import Trainer
 from decoder.unembedder import make_unembedder
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data.distributed import DistributedSampler
+
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+
+def cleanup():
+    dist.destroy_process_group()
+
 
 os.environ["WANDB_DISABLED"] = "true"
 #wandb.init(project="neuroGPT")
@@ -148,19 +162,9 @@ def train(config: Dict=None) -> Trainer:
         train_files = train_folds[config['fold_i']]
         test_files = test_folds[config['fold_i']]
 
-        train_dataset = MotorImageryDataset(train_files, sample_keys=[
-                'inputs',
-                'attention_mask'
-            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=downstream_path, gpt_only= not config["use_encoder"])
-        # pdb.set_trace()
-        
-        test_dataset = MotorImageryDataset(test_files, sample_keys=[
-                'inputs',
-                'attention_mask'
-            ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=downstream_path, gpt_only= not config["use_encoder"])
-       
-        validation_dataset = test_dataset
-        test_dataset = train_dataset
+        train_dataset = EEGDatasetCls(folder_path=downstream_path)
+        validation_dataset = EEGDatasetCls(folder_path=downstream_path)
+        test_dataset = None  
         
     else:
         root_path = config["train_data_path"]
@@ -171,10 +175,16 @@ def train(config: Dict=None) -> Trainer:
         print("\ntrain_length is: ", train_len)
         print("\nfirst file name: ", files[0])
      
+     
         random.shuffle(files)
+<<<<<<< Updated upstream
         print("\nfirst file name after shuffling: ", files[0])
         
         train_dataset = EEGDataset(files[:train_len], sample_keys=[
+=======
+        print(files[0])
+        train_dataset = EEGDataset(files[2:5], sample_keys=[
+>>>>>>> Stashed changes
             'inputs',
             'attention_mask'
         ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=root_path, gpt_only= not config["use_encoder"], normalization=config["do_normalization"])
@@ -183,7 +193,11 @@ def train(config: Dict=None) -> Trainer:
         print(f"\nNumber of training files to be loaded: {len(files)}\n")
 >>>>>>> Stashed changes
 
+<<<<<<< Updated upstream
         validation_dataset = EEGDataset(files[train_len:], sample_keys=[
+=======
+        validation_dataset = EEGDataset(files[6:8], sample_keys=[
+>>>>>>> Stashed changes
             'inputs',
             'attention_mask'
         ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=root_path, gpt_only= not config["use_encoder"], normalization=config["do_normalization"])
@@ -223,7 +237,7 @@ def train(config: Dict=None) -> Trainer:
         lr_scheduler_type=config["lr_scheduler"],
         warmup_ratio=config["warmup_ratio"],
         max_steps=config["training_steps"],
-        # num_train_epochs=5,
+        # n um_train_epochs=5,
         save_steps=model_save_steps,
         logging_steps=config["log_every_n_steps"],
         eval_steps=config["eval_every_n_steps"],
@@ -335,7 +349,14 @@ def make_model(model_config: Dict=None):
         embedder=embedder,
         decoder=decoder,
         unembedder=unembedder
+<<<<<<< Updated upstream
     )    
+=======
+    )
+    model.cuda()
+    model = DDP(model, device_ids=[0,1,2,3])
+
+>>>>>>> Stashed changes
 
     if model_config["ft_only_encoder"]:
         model.switch_ft_mode(ft_encoder_only=True)
@@ -989,6 +1010,8 @@ def get_args() -> argparse.ArgumentParser:
     parser.add_argument('--stride-avg-pool', metavar='INT', default=15, type=int, help='length of stride between temporal pooling filters (default: 15)')
     parser.add_argument('--n-filters-time', metavar='INT', default=40, type=int, help='number of temporal filters (default: 40)')
     parser.add_argument('--num-encoder-layers', metavar='INT', default=6, type=int, help='number of transformer layers in encoder')
+    parser.add_argument('--rank', default=0, type=int, help='Rank of the process')
+    parser.add_argument('--world-size', default=4, type=int, help='Total number of processes')
 
     parser.add_argument('--eval_every_n_steps', default=2000, type=int)
     parser.add_argument('--freeze-encoder', metavar='BOOL', default='False',

@@ -91,12 +91,14 @@ class Trainer(Trainer):
             #     )
             print("iterable dataset")
             # pdb.set_trace()
+            train_sampler = DistributedSampler(self.train_dataset, shuffle=True)
             return DataLoader(
                 train_dataset,
                 batch_size=self.args.per_device_train_batch_size,
                 # collate_fn=data_collator,
                 num_workers=self.args.dataloader_num_workers,
                 pin_memory=True,
+                sampler=train_sampler
             )
 
         train_sampler = self._get_train_sampler()
