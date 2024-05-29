@@ -178,10 +178,9 @@ def train(config: Dict=None) -> Trainer:
             'inputs',
             'attention_mask'
         ], chunk_len=config["chunk_len"], num_chunks=config["num_chunks"], ovlp=config["chunk_ovlp"], root_path=root_path, gpt_only= not config["use_encoder"], normalization=config["do_normalization"])
-<<<<<<< Updated upstream
-=======
+
+
         print(f"\nNumber of training files to be loaded: {len(files)}\n")
->>>>>>> Stashed changes
 
         validation_dataset = EEGDataset(files[train_len:], sample_keys=[
             'inputs',
