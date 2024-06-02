@@ -277,6 +277,36 @@ def make_trainer(
     ----
     trainer: transformers.Trainer
     """
+    per_device_train_batch_size = 4  # Example starting point, adjust based on model and memory
+    gradient_accumulation_steps = 4  # Adjust based on memory and desired effective batch size
+
+    deepspeed_config_dict = {
+        "zero_optimization": {
+            "stage": 2,  # Using ZeRO Stage 2 for optimal balance between memory usage and speed
+            "allgather_partitions": True,
+            "allgather_bucket_size": 2e8,
+            "reduce_scatter": True,
+            "reduce_bucket_size": 2e8,
+            "overlap_comm": True,
+            "contiguous_gradients": True,
+            "offload_optimizer": {
+                "device": "cpu",  # Offloading optimizer state to CPU can save GPU memory
+                "pin_memory": True
+            },
+        },
+        "train_micro_batch_size_per_gpu": per_device_train_batch_size,  # Batch size per GPU
+        "gradient_accumulation_steps": gradient_accumulation_steps,  # Accumulate gradients to simulate larger batch size
+        "fp16": {
+            "enabled": True,  # Enable FP16 training for faster computation and reduced memory usage
+            "loss_scale": 0,  # Using dynamic loss scaling
+            "loss_scale_window": 1000,
+            "hysteresis": 2,
+            "min_loss_scale": 1
+        },
+        "gradient_clipping": 1.0,  # Gradient clipping to avoid gradient explosion
+        "steps_per_print": 1000,  # Aligned with your logging preferences
+    }
+
     trainer_args = TrainingArguments(
         output_dir=output_dir,
         run_name=run_name,
@@ -285,7 +315,7 @@ def make_trainer(
         overwrite_output_dir=overwrite_output_dir,
         per_device_train_batch_size=per_device_train_batch_size,
         per_device_eval_batch_size=per_device_eval_batch_size,
-        dataloader_num_workers=dataloader_num_workers,
+        dataloader_num_workers=0,
         optim=optim,
         learning_rate=learning_rate,
         warmup_ratio=warmup_ratio,

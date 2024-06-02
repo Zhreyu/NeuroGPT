@@ -1,5 +1,14 @@
-#!/usr/bin/env python3 
+import torch
+from torch.utils.data import DataLoader
+import logging
+import argparse
+from src.encoder.conformer_braindecode import EEGConformer
+from src.embedder.base import BaseEmbedder
+from src.decoder.gpt import GPT2Model as GPTDecoder
+from src.model import Model
+from src.batcher.downstream_dataset import EEGDatasetCls
 
+#!/usr/bin/env python3 
 import torch
 from typing import Dict
 import warnings
@@ -203,3 +212,88 @@ class Model(torch.nn.Module):
             outputs['outputs'] = self.unembedder(inputs=outputs['outputs'])['outputs']
 
         return (outputs, batch) if return_batch else outputs
+
+def load_data(data_dir: str, batch_size: int, shuffle: bool = False) -> DataLoader:
+    """
+    Load data using the existing DataLoader setup.
+    
+    Args:
+        data_dir (str): Directory path for the dataset.
+        batch_size (int): Number of samples per batch.
+        shuffle (bool): Whether to shuffle the data.
+    
+    Returns:
+        DataLoader: DataLoader object for the dataset.
+    """
+    # Initialize the dataset
+    dataset = EEGDatasetCls(data_dir)
+    
+    # Create DataLoader
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    
+    return data_loader
+
+def perform_predictions(model: torch.nn.Module, data_loader: DataLoader, device: torch.device) -> list:
+    """
+    Perform predictions on the loaded data.
+    
+    Args:
+        model (torch.nn.Module): The loaded model for predictions.
+        data_loader (DataLoader): DataLoader object containing the data.
+        device (torch.device): Device to perform computations on (CPU or GPU).
+    
+    Returns:
+        list: List of predictions for each batch.
+    """
+    model.to(device)
+    predictions = []
+    
+    with torch.no_grad():
+        for batch in data_loader:
+            inputs = batch['inputs'].to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            predictions.extend(predicted.cpu().numpy())
+    
+    return predictions
+
+def save_predictions(predictions: list, output_path: str):
+    """
+    Save predictions to a specified file.
+    
+    Args:
+        predictions (list): List of predictions.
+        output_path (str): Path to save the predictions file.
+    """
+    with open(output_path, 'w') as f:
+        for pred in predictions:
+            f.write(f"{pred}\n")
+
+def main(args):
+    # Load the trained model
+    model = from_pretrained(args.model_path)
+    
+    # Load the data
+    data_loader = load_data(args.data_dir, args.batch_size, shuffle=args.shuffle)
+    
+    # Set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    # Perform predictions
+    predictions = perform_predictions(model, data_loader, device)
+    
+    # Save predictions
+    save_predictions(predictions, args.output_path)
+    
+    logger.info(f"Predictions saved to {args.output_path}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Model Prediction Script")
+    parser.add_argument('--model_path', type=str, required=True, help="Path to the pre-trained model file")
+    parser.add_argument('--data_dir', type=str, required=True, help="Directory path for the dataset")
+    parser.add_argument('--batch_size', type=int, default=32, help="Number of samples per batch")
+    parser.add_argument('--shuffle', type=bool, default=False, help="Whether to shuffle the data")
+    parser.add_argument('--output_path', type=str, required=True, help="Path to save the predictions file")
+    
+    args = parser.parse_args()
+    main(args)

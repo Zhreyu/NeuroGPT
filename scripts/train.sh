@@ -1,1 +1,5 @@
+<<<<<<< Updated upstream
 python3 ../src/train_gpt.py --training-steps=50000 --eval_every_n_steps=1000 --log-every-n-steps=3000 --per-device-training-batch-size=8 --per-device-validation-batch-size=8 --num-workers=4 --num_chunks=34 --chunk_len=512 --chunk_ovlp=51 --num-hidden-layers=6 --num-encoder-layers=6 --run-name='8clen2_embed1024' --training-style='CSM_causal' --embedding-dim=1024 --train-data-path='/home/zeydabadi/node27temp/TUEG_preprocessed_pt/' --deepspeed="/home/zeydabadi/my_projects/NeuroGPT_old/inputs/deepspeed.json"  --fp16='True'
+=======
+python train_gpt.py --training-style='decoding' --num-decoding-classes=4 --training-steps=100  --eval_every_n_steps=20 --log-every-n-steps=10 --num_chunks=34 --per-device-training-batch-size=2 --per-device-validation-batch-size=2 --chunk_len=512 --chunk_ovlp=51 --run-name='dst' --ft-only-encoder='True' --fold_i=0 --num-encoder-layers=6 --num-hidden-layers=6 --learning-rate=1e-4 --use-encoder='True' --embedding-dim=1024  --pretrained-model='pytorch_model.bin' --num-workers=0 --dst-data-path="C:\Users\shreyas\Documents\GitHub\NeuroGPT\train\"
+>>>>>>> Stashed changes
